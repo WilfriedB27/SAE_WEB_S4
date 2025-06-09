@@ -1,0 +1,94 @@
+<auth>
+  <div class="auth-container">
+    <h2 class="auth-title">Profil</h2>
+
+    <div if={!state.user} class="auth-form">
+      <input class="auth-input" type="email" placeholder="Email" value={state.email} oninput={updateEmail} />
+      <input class="auth-input" type="password" placeholder="Mot de passe" value={state.password} oninput={updatePassword} />
+      <button class="auth-button" onclick={login}>Se connecter</button>
+      <button class="auth-button" onclick={register}>S'inscrire</button>
+    </div>
+
+    <div if={state.user} class="logged-in">
+      <p class="welcome-message">Bienvenue, {state.user.email}</p>
+      <button class="auth-button" onclick={logout}>Se déconnecter</button>
+    </div>
+
+    <p if={state.error} class="auth-error">{state.error}</p>
+  </div>
+
+
+
+  <script>
+    export default {
+      state: {
+        email: '',
+        password: '',
+        error: '',
+        user: null
+      },
+
+      onMounted() {
+        this.sa2.onUserStateChanged((user) => {
+          if (user) {
+            console.log("Utilisateur connecté :", user);
+            this.update({ user });
+          } else {
+            console.log("Aucun utilisateur connecté");
+            this.update({ user: null });
+          }
+        });
+      },
+
+      updateEmail(e) {
+        this.update({ email: e.target.value });
+      },
+
+      updatePassword(e) {
+        this.update({ password: e.target.value });
+      },
+
+      async login() {
+        const { email, password } = this.state;
+        try {
+          const user = await this.sa2.login(email, password);
+          console.log("Utilisateur connecté :", user);
+          localStorage.setItem("user", JSON.stringify(user)); 
+          this.update({ user, error: '' });
+
+          window.location.reload();
+        } catch (error) {
+          console.log("Erreur de connexion", error);
+          this.update({ error: error.message });
+        }
+      },
+
+      async register() {
+        const { email, password } = this.state;
+        try {
+          const user = await this.sa2.register(email, password);
+          console.log("Utilisateur inscrit :", user);
+          this.update({ user, error: '' });
+          this.state.user = user; 
+        } catch (error) {
+          console.log("Erreur d'inscription", error);
+          this.update({ error: error.message });
+        }
+      },
+
+      async logout() {
+        try {
+          await this.sa2.logout();
+          console.log("Utilisateur déconnecté");
+          localStorage.removeItem("user");
+          this.update({ user: null });
+         
+          window.location.reload();
+        } catch (error) {
+          console.log("Erreur de déconnexion", error);
+          this.update({ error: error.message });
+        }
+      },
+    };
+  </script>
+</auth>

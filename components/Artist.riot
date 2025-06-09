@@ -1,0 +1,75 @@
+<artist>
+  <div>
+    <h2>{ state.artist.name }</h2>
+
+    <img if={state.artist.images?.length > 0} 
+         src={state.artist.images[0].uri} 
+         alt={state.artist.name} 
+         class="artist-image"/>
+
+    <!-- Affichage du texte formaté -->
+    <p if={state.formattedProfile} ref="profile">
+      { state.formattedProfile }
+    </p >
+    <p class="artist" if={!state.formattedProfile}>Aucune biographie disponible.</p>
+  </div>
+
+  <script>
+    export default {
+      state: {
+        artist: {},
+        formattedProfile: ''
+      },
+
+      async onMounted() {
+        await this.updateArtist();
+      },
+
+      async updateArtist() {
+        const hash = window.location.hash.split('/artist/')[1];
+        if (!hash) return console.error('Artiste non trouvé');
+        
+        const artist = await this.sa.getArtist(hash);
+        this.update({ artist });
+        await this.formatProfile(artist.profile);
+      },
+
+      async formatProfile(profile) {
+          if (!profile) return this.update({ formattedProfile: 'Aucune biographie disponible.' });
+
+          let formattedProfile = profile;
+
+
+          const entityTypes = {
+              artistId: { regex: /\[a(\d+)\]/g, fetch: id => this.sa.getArtist(id), placeholder: '[Artiste inconnu]' },
+              label: { regex: /\[l(\d+)\]/g, fetch: id => this.sa.getLabel(id), placeholder: '[Label inconnu]' },
+              release: { regex: /\[r(\d+)\]/g, fetch: id => this.sa.getRelease(id), placeholder: '[Version inconnue]' },
+              master: { regex: /\[m(\d+)\]/g, fetch: id => this.sa.getMaster(id), placeholder: '[Master inconnu]' }
+          };
+
+          try {
+              for (const [type, { regex, fetch, placeholder }] of Object.entries(entityTypes)) {
+                  const matches = [...formattedProfile.matchAll(regex)];
+                  const fetchPromises = matches.map(match => fetch(match[1]));
+                  const entities = await Promise.all(fetchPromises);
+
+            
+                  matches.forEach((match, index) => {
+                      const entity = entities[index];
+                      formattedProfile = formattedProfile.replace(match[0], entity?.name || placeholder);
+                  });
+              }
+
+              formattedProfile = formattedProfile.replace(/\[a=(.*?)\]/g, '<i>$1</i>');
+
+              this.update({ formattedProfile });
+
+              this.root.querySelector('p').innerHTML = formattedProfile;
+          } catch (error) {
+              console.error("Erreur lors de la récupération des informations :", error);
+              this.update({ formattedProfile });
+          }
+      }
+    };
+  </script>
+</artist>

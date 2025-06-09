@@ -1,0 +1,116 @@
+<app>
+    <router base={base}>
+        <header>
+            <div class="nav_gauche">
+                <a href="#/favorites">
+                    <img src="components/Images/coeur.svg" alt="Favoris">
+                </a>
+                <a href="#/auth">
+                    <img src="components/Images/personne.svg" alt="Authentification">
+                </a>
+                <a if="{state.isAuthenticated}" href="#" onclick="{logout}">
+                    <img src="components/Images/porte-de-sortie.svg" alt="Déconnexion">
+                </a>
+            </div>
+            <div class="nav_mid">
+                <h1><a href="/~gallego/SAE_WEB_S4/" class="title-link">Musica</a></h1>
+            </div>
+            <div class="nav_droite">
+                <select id="search-type" name="search-type" onchange="{updateQueryType}">
+                    <option value="release">Release</option>
+                    <option value="artist">Artiste</option>
+                    <option value="master">Master</option>
+                </select>
+                <input type="text" placeholder="Entrez un artiste ou un album..." oninput="{updateQuery}" value="{state.query}">
+            </div>
+        </header>
+
+        <route path="(#)?"></route>
+        <route path="#/artist/:id">
+            <artist></artist>
+        </route>
+        <route path="#/release/:id">
+            <release></release>
+        </route>
+        <route path="#/master/:id">
+            <master></master>
+        </route>
+        <route path="#/favorites">
+            <favorites></favorites>
+        </route>
+        <route path="#/auth">
+            <auth></auth>
+        </route>
+        <route path="#/search/:type/:query">
+            <search></search>
+        </route>
+    </router>
+
+    <script>
+        export default {
+            base: 'https://dwarves.iut-fbleau.fr/~gallego/SAE_WEB_S4/',
+            state: {
+                query: '',
+                searchType: 'release',
+                isAuthenticated: false
+            },
+
+            onMounted() {
+                const user = JSON.parse(localStorage.getItem("user"));
+                if (user) {
+                    this.state.isAuthenticated = true;
+                    this.state.user = user;
+                }
+
+                this.restoreSearchType();
+            },
+
+            restoreSearchType() {
+                const hash = window.location.hash;
+                const parts = hash.split('/search/');
+                if (parts.length > 1) {
+                    const searchParams = parts[1].split('/');
+                    if (searchParams.length === 2) {
+                        this.state.searchType = searchParams[0];
+                        this.state.query = decodeURIComponent(searchParams[1]);
+                    }
+                }
+            },
+
+            updateQuery(e) {
+                this.state.query = e.target.value;
+                this.updateSearchResults();
+            },
+
+            updateQueryType(e) {
+                this.state.searchType = e.target.value;
+                this.updateSearchResults();  
+            },
+
+            async updateSearchResults() {
+                if (this.state.query.trim() === '') return;
+
+                const encodedQuery = encodeURIComponent(this.state.query);
+                window.location.hash = `#/search/${this.state.searchType}/${encodedQuery}`; 
+
+                try {
+                    const results = await this.sa.doRequest(this.state.query, this.state.searchType);
+                    this.update({ results });
+                } catch (error) {
+                    console.error('Erreur lors de la récupération des résultats', error);
+                }
+            },
+
+            async logout() {
+                try {
+                    await this.sa2.logout();
+                    localStorage.removeItem("user");
+                    this.state.isAuthenticated = false;
+                    window.location.reload();
+                } catch (error) {
+                    console.log("Erreur de déconnexion", error);
+                }
+            }
+        };
+    </script>
+</app>

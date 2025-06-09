@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>App</title>
+    
+		<link rel="stylesheet" href="styles.css">
+
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js" type="module"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js" type="module"></script>
+
+		<script src="./api/Discogs.js"></script>
+    <script src="./api/Firebase.js" type = "module"></script>
+
+		<script src="./components/app.riot"     type="riot"></script>
+    <script src="./components/Auth.riot"     type="riot"></script>
+    <script src="./components/Search.riot"     type="riot"></script>
+    <script src="./components/Favorites.riot"     type="riot"></script>
+    <script src="./components/Release.riot"     type="riot"></script>
+    <script src="./components/Artist.riot"     type="riot"></script>
+    <script src="./components/Master.riot"     type="riot"></script>
+
+  </head>
+  <body>
+    <app></app>
+    <script src="https://cdn.jsdelivr.net/npm/riot@6/riot+compiler.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@riotjs/route"></script>
+    <script type="module">
+
+      import { makeServiceFirebase } from "./api/Firebase.js";
+
+      const sa = makeServiceDiscogs();
+      const sa2 = makeServiceFirebase();
+
+      riot.install(function(component) {
+        component.sa = sa;
+        component.sa2 = sa2;
+      });
+
+      riot.register('router', route.Router);
+	    riot.register('route', route.Route);
+
+      riot.compile().then(() => {
+        riot.mount('app');
+      });
+    </script>
+  </body>
+</html>

@@ -1,0 +1,47 @@
+<favorites>
+  <h2>Mes Favoris</h2>
+
+  <div class="albums-container" if={state.favorites.length > 0}>
+      <div class="album-card" each={item in state.favorites}>
+          <a href="#/release/{item.id}">
+              <img src={ item.image } alt={ item.title } />
+              <span>{ item.title }</span>
+          </a>
+          <button onclick={() => removeFavorite(item)}>Retirer des favoris</button>
+      </div>
+  </div>
+
+  <p if={state.favorites.length === 0}>Aucun favori pour le moment.</p>
+
+  <script>
+    export default {
+      state: {
+        favorites: []
+      },
+
+      onMounted() {
+        const user = JSON.parse(localStorage.getItem("user"));
+        if (user) {
+          this.fetchFavorites(user.uid);
+        }
+      },
+
+      async fetchFavorites(userId) {
+        try {
+          const favorites = await this.sa2.getFavorites(userId);
+          this.update({ favorites });
+        } catch (error) {
+          console.error("Erreur lors de la récupération des favoris", error);
+        }
+      },
+
+      async removeFavorite(item) {
+        const user = JSON.parse(localStorage.getItem("user"));
+        if (user) {
+          await this.sa2.removeFavorite(user.uid, item);
+          this.fetchFavorites(user.uid); 
+        }
+      }
+    };
+  </script>
+</favorites>

@@ -1,0 +1,57 @@
+<release>
+    <div class="album-container" if={state.album}>
+        <h2 class="album-title">{ state.album.title || 'Titre inconnu' }</h2>
+        <img class="album-image" src={ state.album.images?.[0]?.uri || 'placeholder.jpg' } alt={ state.album.title || 'Sans titre' } />
+        <p class="artist-info"><strong>Artiste :</strong> 
+            <a href="#/artist/{ state.album.artists?.[0]?.id }">
+                { state.album.artists?.[0]?.name || 'Inconnu' }
+            </a>
+        </p>
+        <p class="release-date"><strong>Date de sortie :</strong> { state.album.year || 'Non spécifié' }</p>
+
+        <h3 class="tracklist-title">Liste des chansons</h3>
+        <ul class="tracklist" if={state.album.tracklist && state.album.tracklist.length > 0}>
+            <li each={track in state.album.tracklist} class="track-item">
+                { track.position }. { track.title } ({ track.duration || '??:??' })
+            </li>
+        </ul>
+        <p class="no-tracks" if={!state.album.tracklist || state.album.tracklist.length === 0}>Aucune chanson trouvée.</p>
+    </div>
+    <p class="loading-message" if={!state.album}>Chargement...</p>
+
+
+    <script>
+        export default {
+            state: {
+                id: '',
+                album: {}
+            },
+
+            async onMounted() {
+                this.getIdFromHash();  
+                await this.fetchAlbum();
+            },
+
+            getIdFromHash() {
+                const hash = window.location.hash;
+                const idParam = hash.split('/release/')[1];
+
+                if (idParam) {
+                    this.update({ id: idParam });
+                } else {
+                    console.error('Aucun ID trouvé dans l\'URL');
+                }
+            },
+
+            async fetchAlbum() {
+                if (!this.state.id) return;
+                try {
+                    const album = await this.sa.getReleaseDetails(this.state.id);
+                    this.update({ album });
+                } catch (error) {
+                    console.error('Erreur lors de la récupération des infos de l\'album', error);
+                }
+            }
+        };
+    </script>
+</release>

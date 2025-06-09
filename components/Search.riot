@@ -1,0 +1,122 @@
+<search>
+    <h2>Résultats pour : {state.query}</h2>
+
+    <div class="pagination-controls" if={state.totalPages > 1}>
+        <button onclick={prevPage} if={state.currentPage > 1}>← Page précédente</button>
+        <span>Page {state.currentPage} / {state.totalPages}</span>
+        <button onclick={nextPage} if={state.currentPage < state.totalPages}>Page suivante →</button>
+    </div>
+
+    <div class="albums-container" if={state.results.length > 0}>
+        <div class="album-card" each={ result in state.results }>
+
+            <div if={state.searchType === 'artist'}>
+                <a href="#/artist/{result.id}">
+                    <img src={ result.image || 'placeholder.jpg' } alt={ result.name } />
+                    <h3>{ result.title }</h3>
+                </a>
+            </div>
+
+            <div if={state.searchType === 'release'}>
+                <a href="#/release/{result.id}">
+                    <img src={ result.image || 'placeholder.jpg' } alt={ result.title } />
+                    <span>{ result.title }</span>
+                </a>
+                <button class="favoris" onclick={() => addToFavorites(result)}>Ajouter aux favoris</button>
+            </div>
+
+            <div if={state.searchType === 'master'}>
+                <a href="#/master/{result.id}">
+                    <img src={ result.image || 'placeholder.jpg' } alt={ result.title } />
+                    <span>{ result.title }</span>
+                    <h3> Master </h3>
+                </a>
+                <button class="favoris" onclick={() => addToFavorites(result)}>Ajouter aux favoris</button>
+            </div>
+
+        </div>
+    </div>
+
+    <p if={state.results.length === 0}>Aucun résultat trouvé.</p>
+
+    <script>
+        export default {
+            state: {
+                query: '',
+                results: [],
+                searchType: 'release',
+                currentPage: 1,
+                totalPages: 1
+            },
+
+            async onMounted() {
+                this.updateQueryFromHash();  
+                window.addEventListener('hashchange', this.updateQueryFromHash); 
+            },
+
+            async updateQueryFromHash() {
+                const hash = window.location.hash;
+                const searchParts = hash.split('/search/');
+
+                if (searchParts.length > 1) {
+                    const searchParams = searchParts[1].split('/');
+                    if (searchParams.length === 2) {
+                        this.state.searchType = searchParams[0];  
+                        this.state.query = decodeURIComponent(searchParams[1]);  
+
+                        console.log("Mise à jour : searchType=", this.state.searchType, "query=", this.state.query);
+                    }
+                    await this.fetchResults();  
+                } else {
+                    console.error('Aucun paramètre de recherche trouvé');
+                }
+            },
+
+            async fetchResults() {
+                if (this.state.query.trim() === '') return;
+
+                    console.log("Fetching results for:", this.state.query, "Type:", this.state.searchType, "Page:", this.state.currentPage);
+
+                    try {
+                        const response = await this.sa.doRequest(this.state.query, this.state.searchType, this.state.currentPage);
+                        this.update({ results: response.results, totalPages: response.pagination.pages || 1 });
+                    } catch (error) {
+                        console.error('Erreur lors de la récupération des résultats', error);
+                    }
+                },
+
+            nextPage() {
+                    if (this.state.currentPage < this.state.totalPages) {
+                        this.update({ currentPage: this.state.currentPage + 1 });
+                        this.fetchResults();
+                    }
+            },
+
+            prevPage() {
+                    if (this.state.currentPage > 1) {
+                        this.update({ currentPage: this.state.currentPage - 1 });
+                        this.fetchResults();
+                    }
+            },
+
+            async addToFavorites(result) {
+                const user = JSON.parse(localStorage.getItem("user"));
+                if (!user) {
+                    alert("Vous devez être connecté pour ajouter aux favoris.");
+                    return;
+                }
+
+                try {
+                    await this.sa2.addFavorite(user.uid, result); 
+                    alert("Album ajouté aux favoris !");
+                } catch (error) {
+                    console.error("Erreur lors de l'ajout aux favoris", error);
+                }
+            },
+
+            onBeforeUnmount() {
+                window.removeEventListener('hashchange', this.updateQueryFromHash); 
+            }
+        };
+    </script>
+</search>

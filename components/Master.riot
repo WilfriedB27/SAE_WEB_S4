@@ -1,0 +1,59 @@
+<master>
+    <div class="master-container" if={state.master}>
+        <h2 class="master-title">{ state.master.title || 'Titre inconnu' }</h2>
+        <img class="master-image" src={ state.master.images?.[0]?.uri || 'placeholder.jpg' } alt={ state.master.title || 'Sans titre' } />
+        <p class="artist">
+            <strong>Artiste :</strong> 
+            <a href="#/artist/{ state.master.artists?.[0]?.id }">
+                { state.master.artists?.[0]?.name || 'Inconnu' }
+            </a>
+        </p>
+        <p class="release-year"><strong>Année de sortie :</strong> { state.master.year || 'Non spécifiée' }</p>
+
+        <h3 class="versions-title">Liste des versions disponibles</h3>
+        <ul class="versions-list" if={state.master.versions && state.master.versions.length > 0}>
+            <li each={version in state.master.versions} class="version-item">
+                <a href="#/release/{ version.id }">{ version.title } ({ version.year || '??' })</a>
+            </li>
+        </ul>
+        <p class="no-versions" if={!state.master.versions || state.master.versions.length === 0}>Aucune version trouvée.</p>
+    </div>
+    <p class="loading-message" if={!state.master}>Chargement...</p>
+
+
+
+    <script>
+        export default {
+            state: {
+                id: '',
+                master: {}
+            },
+
+            async onMounted() {
+                this.getIdFromHash();  
+                await this.fetchMaster();
+            },
+
+            getIdFromHash() {
+                const hash = window.location.hash;
+                const idParam = hash.split('/master/')[1];
+
+                if (idParam) {
+                    this.update({ id: idParam });
+                } else {
+                    console.error('Aucun ID trouvé dans l\'URL');
+                }
+            },
+
+            async fetchMaster() {
+                if (!this.state.id) return;
+                try {
+                    const master = await this.sa.getMasterDetails(this.state.id);
+                    this.update({ master });
+                } catch (error) {
+                    console.error('Erreur lors de la récupération des infos du master', error);
+                }
+            }
+        };
+    </script>
+</master>
